@@ -1,0 +1,58 @@
+---
+title: "spatialExample"
+author: 
+- "Gaurav Sharma"
+- "Loyal Goff"
+- "Genevieve Stein-O'Brien"
+date: "7/31/2019"
+output: html_document
+---
+
+```{r setup}
+library(rgl)
+library(projectR)
+library(psych)
+library(fields)
+library(CoGAPS)
+library(magick)
+library(BiocParallel)
+
+# Fix rgl crashing issue
+Sys.setenv(LIBGL_ALWAYS_SOFTWARE=1)
+```
+
+# Overview
+
+## Data Import
+```{r}
+# Read Raw data
+raw.data = read.csv("dge_raw.txt",sep = "\t",header = F)
+raw.data.genes = raw.data$V1
+raw.data$V1 = NULL
+
+print(grep("'",raw.data.genes,value = T,fixed = T))
+raw.data.genes = gsub("'","",raw.data.genes,fixed = T)
+raw.data = as.matrix(raw.data)
+rownames(raw.data) = raw.data.genes
+
+# Read Normalized data
+normalized.data = read.csv("dge_normalized.txt", sep = "\t")
+
+print(grep("'",rownames(normalized.data),value = T,fixed = T))
+normalized.data.genes<-gsub("'","",rownames(normalized.data),fixed = T)
+normalized.data <- as.matrix(normalized.data)
+rownames(normalized.data) <- normalized.data.genes
+
+# In situ data
+insitu.matrix = read.csv("binarized_bdtnp.csv",check.names=F)
+insitu.genes_orig <- colnames(insitu.matrix)
+
+missingGenes = insitu.genes_orig[which(!insitu.genes_orig %in% normalized.data.genes)]
+print(missingGenes)
+insitu.genes = gsub(".","-",insitu.genes_orig,fixed = T)
+insitu.genes = gsub("-spl-","(spl)",insitu.genes,fixed = T)
+stopifnot(all(insitu.genes %in% raw.data.genes))
+stopifnot(all(insitu.genes %in% normalized.data.genes))
+insitu.matrix = as.matrix(insitu.matrix)
+colnames(insitu.matrix) = insitu.genes
+```
