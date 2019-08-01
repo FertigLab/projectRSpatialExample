@@ -24,7 +24,7 @@ Sys.setenv(LIBGL_ALWAYS_SOFTWARE=1)
 # Overview
 
 ## Data Import
-```{r}
+```{r dataImport}
 # Read Raw data
 raw.data = read.csv("dge_raw.txt",sep = "\t",header = F)
 raw.data.genes = raw.data$V1
@@ -56,3 +56,23 @@ stopifnot(all(insitu.genes %in% normalized.data.genes))
 insitu.matrix = as.matrix(insitu.matrix)
 colnames(insitu.matrix) = insitu.genes
 ```
+
+```{r geometry}
+# Geometry data
+geometry <- read.csv("geometry.txt",sep = " ")
+geometry.inv<-geometry
+geometry.inv$ycoord<--(geometry.inv$ycoord)
+full.geometry<-rbind(geometry,geometry.inv)
+xlim<-c(-max(abs(geometry)),max(abs(geometry)))
+ylim<-xlim
+zlim<-ylim
+
+#Visualize the geometry
+plot3d(full.geometry,xlim=xlim,ylim=ylim,zlim=zlim)
+```
+
+## CoGAPS on Gene expression data
+```{r}
+
+```
+
