@@ -83,7 +83,7 @@ dataCogaps <- CoGAPS(normalized.data, params = runParams, nThreads = 10)
 ```{r}
 #importing the pre-computed cogaps result
 dataCogaps <- readRDS('drosophilaNormalizedData20result2.rds')
-projPosCgps <- projectR(t(insitu.matrix),loadings = dataCogaps100, full = T)
+projPosCgps <- projectR(t(insitu.matrix),loadings = dataCogaps, full = T)
 ```
 
 ## Visualize and save the patterns
