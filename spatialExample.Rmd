@@ -1,14 +1,16 @@
 ---
 title: "spatialExample"
-author: 
-- "Gaurav Sharma"
-- "Loyal Goff"
-- "Genevieve Stein-O'Brien"
+author:
+- Gaurav Sharma
+- Loyal Goff
+- Genevieve Stein-O'Brien
 date: "7/31/2019"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
-```{r setup}
+```{r setup, warning=FALSE, message=FALSE}
 library(rgl)
 library(projectR)
 library(psych)
@@ -88,17 +90,55 @@ projPosCgps <- projectR(t(insitu.matrix),loadings = dataCogaps, full = T)
 ```
 
 ## Visualize and save the patterns
-```{r}
-for(x in 1:nPat){
-i <- x
-pp.plot<-c(projPosCgps[[1]][i,],projPosCgps[[1]][i,])
-par3d(windowRect = c(0,50,800,800))
-
-plot3d(full.geometry,xlim=xlim,ylim=ylim,zlim=zlim,col=myColorRamp(palette=inferno(100),pp.plot),size=10,box=F,axes=F,xlab="",ylab="",zlab="", aspect = T)
-bgplot3d(suppressWarnings (image.plot( legend.only=TRUE, nlevel=100, zlim=c(min(pp.plot),max(pp.plot)), legend.args=list(text='Projected pattern'),col=inferno(100))))
-snapshot3d(filename=paste0("./plots/png/cpgs",as.character(nPat),"Pattern",as.character(i),".png"),fmt="png") 
-movie3d(spin3d(axis=c(1,1,1),rpm=5), duration = 10,movie=paste0("cgps",as.character(nPat),"Pattern",as.character(i)),dir="./plots",convert = TRUE)
-while (rgl.cur() > 0) { rgl.close() }
+```{r eval = FALSE}
+for(x in 1:nPat) {
+      i <- x
+      pp.plot <- c(projPosCgps[[1]][i, ], projPosCgps[[1]][i, ])
+      par3d(windowRect = c(0, 50, 800, 800))
+      
+      plot3d(
+            full.geometry,
+            xlim = xlim,
+            ylim = ylim,
+            zlim = zlim,
+            col = myColorRamp(palette = inferno(100), pp.plot),
+            size = 10,
+            box = F,
+            axes = F,
+            xlab = "",
+            ylab = "",
+            zlab = "",
+            aspect = T
+      )
+      bgplot3d(suppressWarnings (
+            image.plot(
+                  legend.only = TRUE,
+                  nlevel = 100,
+                  zlim = c(min(pp.plot), max(pp.plot)),
+                  legend.args = list(text = 'Projected pattern'),
+                  col = inferno(100)
+            )
+      ))
+      snapshot3d(
+            filename = paste0(
+                  "./plots/png/cpgs",
+                  as.character(nPat),
+                  "Pattern",
+                  as.character(i),
+                  ".png"
+            ),
+            fmt = "png"
+      )
+      movie3d(
+            spin3d(axis = c(1, 1, 1), rpm = 5),
+            duration = 10,
+            movie = paste0("cgps", as.character(nPat), "Pattern", as.character(i)),
+            dir = "./plots",
+            convert = TRUE
+      )
+      while (rgl.cur() > 0) {
+            rgl.close()
+      }
 }
 ```
 
