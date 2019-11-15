@@ -1,0 +1,23 @@
+---
+title: "projectR_time"
+author: "Gaurav"
+date: "8/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(projectR)
+```
+
+```{r}
+sourcePat <- matrix(data = rnorm(2e6), nrow = 2e4, ncol = 100 )
+colnames(sourcePat) <- paste0('Pat',1:100)
+rownames(sourcePat) <- paste0('Gene',1:20000)
+targetDat <- matrix(data = rnorm(2e7), nrow = 2e4,ncol = 1e3)
+rownames(targetDat) <- paste0('Gene',1:20000)
+```
+
+```{r}
+system.time(projection <- projectR(targetDat, loadings = sourcePat))
+```
+
