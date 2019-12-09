@@ -6,8 +6,8 @@ author:
 - Genevieve Stein-O'Brien
 date: "7/31/2019"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, warning=FALSE, message=FALSE}
@@ -18,6 +18,7 @@ library(fields)
 library(CoGAPS)
 library(magick)
 library(BiocParallel)
+source('./utils.R')
 
 # Fix rgl crashing issue
 Sys.setenv(LIBGL_ALWAYS_SOFTWARE=1)
@@ -90,7 +91,9 @@ projPosCgps <- projectR(t(insitu.matrix),loadings = dataCogaps, full = T)
 ```
 
 ## Visualize and save the patterns
-```{r eval = FALSE}
+
+Remove eval = FALSE to visualize all patterns
+```{r}
 for(x in 1:nPat) {
       i <- x
       pp.plot <- c(projPosCgps[[1]][i, ], projPosCgps[[1]][i, ])
