@@ -1,0 +1,94 @@
+---
+title: "projectionOfInsitu"
+author: "Gaurav"
+date: "12/12/2019"
+output: html_document
+---
+Need to run spatialExample.Rmd before running this
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(CoGAPS)
+library(pheatmap)
+library(projectR)
+```
+
+```{r}
+files <- list.files('insituCgps/')
+files <- files[-1]
+files <- paste0('insituCgps/',files)
+insituCgps <- lapply(files,readRDS)
+```
+Do projection
+```{r}
+projections <- lapply(insituCgps,function(icgp) projectR(normalized.data,loadings = icgp,full = T))
+```
+```{r}
+saveRDS(projections,'projectionsOfInsitu.rds')
+```
+
+```{r}
+pheatmap(projections[[1]]$projection)
+```
+Since these patterns were learnt from the insitu matrix which is the spatial distribution of the gene expression of 84 marker genes. These patterns can be thought of as spatial patterns. Thus, a quick test to check if the patterns are meaningful is to compare the mean distance of top quantile of cells with randomly chosen quarter of cells. If the patterns are spatially meaningful than the mean distance of top quantile will be significantly less than randomly chosen cells. 
+
+
+## Now we need to demonstrate what does these patterns mean
+### Get the location of the cells
+```{r}
+library(DistMap)
+dm = new("DistMap",
+         raw.data=raw.data,
+         data=normalized.data,
+         insitu.matrix=insitu.matrix,
+         geometry=as.matrix(geometry))
+dm <- binarizeSingleCellData(dm, seq(0.15, 0.5, 0.01))
+dm <- mapCells(dm)
+
+# Assign location using highest mcc.scores
+location <- sapply(1:ncol(dm@mcc.scores),function(j){
+      which.max(dm@mcc.scores[,j])
+})
+```
+```{r}
+geometry <- read.csv("geometry.txt",sep = " ")
+distances <- dist(geometry[1:3039,])
+dv <- as.vector(distances)
+meanDistance <- mean(dv)
+```
+For nPatterns = 10 get the distances for top quantile cells
+```{r include=F}
+meanDistPat <- sapply(1:10,function(i){
+tp <- projections[[1]]$projection[i,]
+tp <- unname(tp)
+topQuanTp <- which(tp>quantile(tp,0.75))
+distTp <- dist(geometry[location[topQuanTp],])
+distTp <- as.vector(distTp)
+mean(distTp)
+})
+```
+
+Generate a sampling distribution of distances between top quantile cells
+```{r warning=FALSE,message=F,error=FALSE,include=F}
+randMeanDists <- sapply(1:1e4,function(i){
+      dr <- dist(geometry[sample(3039,324),])
+      mean(dr)
+})
+hist(randMeanDists,breaks = 100,main="Distribution of distances between random top quantile cells")
+meanRD <- mean(randMeanDists)
+sdRD <- sd(randMeanDists)
+```
+With $H_0$ = Mean distance >= meanRD
+and $H_a$ = Mean distance < meanRD
+and $\alpha$ = 0.05
+```{r}
+pVals <- sapply(meanDistPat,function(md){
+      pnorm(md,mean = meanRD,sd=sdRD)
+})
+print(pVals)
+sum(pVals<0.05)
+```
+8 out of 10 patterns are significant. 
+
+
+
+
