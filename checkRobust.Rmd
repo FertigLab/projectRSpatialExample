@@ -1,0 +1,77 @@
+---
+title: "checkRobust"
+author: "Gaurav"
+date: "12/20/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+```
+Generate gene sets
+```{r}
+mesoGenes <- c("sna","Cyp310a1","htl")
+dorsalEctoGenes <- c("zen","zen2")
+```
+Remove Gene sets
+```{r}
+datMeso <- insitu.matrix[,!(colnames(insitu.matrix) %in% mesoGenes)]
+datDorsoEcot <- insitu.matrix[,!(colnames(insitu.matrix) %in% dorsalEctoGenes)]
+```
+Perform projections on modified datasets
+```{r}
+projMeso <- projectR(t(datMeso),dataCogaps)
+projDorsEcto <- projectR(t(datDorsoEcot),dataCogaps)
+```
+Function to get correlation
+```{r get Cor}
+getCor <- function(mat1,mat2){
+  sapply(1:nrow(mat1),function(i) return(cor(mat1[i,],mat2[i,])))
+}
+```
+### Get correlation b/w gene-set-removed projection and full projection
+
+Removing mesodermic genes
+```{r}
+getCor(projMeso,projPosCgps$projection)
+```
+Removing dorsal ectodermic genes
+```{r}
+getCor(projDorsEcto,projPosCgps$projection)
+```
+Perfrom leave-one-out test
+```{r}
+corrLeaveOneOut <- sapply(1:84,function(i){
+  projection <- projectR(t(insitu.matrix[,-i]),dataCogaps)
+  getCor(projection,projPosCgps$projection)
+})
+```
+
+```{r}
+library(pheatmap)
+colnames(corrLeaveOneOut) <- colnames(insitu.matrix)
+rownames(corrLeaveOneOut) <- paste0('Pattern',1:20)
+pheatmap(corrLeaveOneOut)
+```
+```{r include=F}
+png('leaveOneOut.png',width = 10, height = 6, units = 'in',res=300)
+pheatmap(corrLeaveOneOut)
+dev.off()
+```
+
+
+Check random loadings projection
+```{r}
+rdm <- matrix(rnorm(8924*20),ncol = 20, nrow = 8924)
+dimnames(rdm) <- dimnames(dataCogaps@featureLoadings)
+randomProj <- projectR(t(insitu.matrix),rdm)
+getCor(randomProj,projPosCgps$projection)
+```
+
+```{r}
+rdm <- matrix(rnorm(3039*84),ncol = 84, nrow = 3039)
+dimnames(rdm) <- dimnames(insitu.matrix)
+randomProj <- projectR(t(rdm),dataCogaps)
+getCor(randomProj,projPosCgps$projection)
+```
+
