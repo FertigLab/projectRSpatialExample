@@ -4,35 +4,60 @@ author: "Gaurav"
 date: "12/12/2019"
 output: html_document
 ---
-Need to run spatialExample.Rmd before running this
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(CoGAPS)
 library(pheatmap)
 library(projectR)
-```
 
+raw.data = read.csv("dge_raw.txt",sep = "\t",header = F)
+raw.data.genes = raw.data$V1
+raw.data$V1 = NULL
+print(grep("'",raw.data.genes,value = T,fixed = T))
+raw.data.genes = gsub("'","",raw.data.genes,fixed = T)
+raw.data = as.matrix(raw.data)
+rownames(raw.data) = raw.data.genes
+
+normalized.data = read.csv("dge_normalized.txt", sep = "\t")
+print(grep("'",rownames(normalized.data),value = T,fixed = T))
+normalized.data.genes<-gsub("'","",rownames(normalized.data),fixed = T)
+normalized.data <- as.matrix(normalized.data)
+
+insitu.matrix = read.csv("binarized_bdtnp.csv",check.names=F)
+insitu.genes_orig <- colnames(insitu.matrix)
+missingGenes = insitu.genes_orig[which(!insitu.genes_orig %in% normalized.data.genes)]
+print(missingGenes)
+insitu.genes = gsub(".","-",insitu.genes_orig,fixed = T)
+insitu.genes = gsub("-spl-","(spl)",insitu.genes,fixed = T)
+stopifnot(all(insitu.genes %in% raw.data.genes))
+stopifnot(all(insitu.genes %in% normalized.data.genes))
+insitu.matrix = as.matrix(insitu.matrix)
+colnames(insitu.matrix) = insitu.genes
+
+geometry <- read.csv("geometry.txt",sep = " ")
+```
+Load the cogaps result on the insitu matrix
 ```{r}
 files <- list.files('insituCgps/')
 files <- files[-1]
 files <- paste0('insituCgps/',files)
 insituCgps <- lapply(files,readRDS)
 ```
-Do projection
+Do projections
 ```{r}
 projections <- lapply(insituCgps,function(icgp) projectR(normalized.data,loadings = icgp,full = T))
 ```
 ```{r}
 saveRDS(projections,'projectionsOfInsitu.rds')
 ```
-
+Look at the projection
 ```{r}
 pheatmap(projections[[1]]$projection)
 ```
-Since these patterns were learnt from the insitu matrix which is the spatial distribution of the gene expression of 84 marker genes. These patterns can be thought of as spatial patterns. Thus, a quick test to check if the patterns are meaningful is to compare the mean distance of top quantile of cells with randomly chosen quarter of cells. If the patterns are spatially meaningful than the mean distance of top quantile will be significantly less than randomly chosen cells. 
 
+### Test if patterns capture spatially close cells
+Since these patterns were learnt from the insitu matrix which is the spatial distribution of the gene expression of 84 marker genes. These patterns can be thought of as spatial patterns. Thus, a quick test to check if the patterns are meaningful is to compare the mean distance of top quartile of cells with randomly chosen quarter of cells. If the patterns are spatially meaningful than the mean distance of top quartile will be significantly less than randomly chosen cells. 
 
-## Now we need to demonstrate what does these patterns mean
 ### Get the location of the cells
 ```{r}
 library(DistMap)
@@ -49,43 +74,43 @@ location <- sapply(1:ncol(dm@mcc.scores),function(j){
       which.max(dm@mcc.scores[,j])
 })
 ```
+
 ```{r}
-geometry <- read.csv("geometry.txt",sep = " ")
 distances <- dist(geometry[1:3039,])
 dv <- as.vector(distances)
 meanDistance <- mean(dv)
 ```
-For nPatterns = 10 get the distances for top quantile cells
-```{r include=F}
+For nPatterns = 10 get the distances for top quartile cells
+```{r}
 meanDistPat <- sapply(1:10,function(i){
 tp <- projections[[1]]$projection[i,]
 tp <- unname(tp)
-topQuanTp <- which(tp>quantile(tp,0.75))
+topQuanTp <- which(tp>quartile(tp,0.75))
 distTp <- dist(geometry[location[topQuanTp],])
 distTp <- as.vector(distTp)
 mean(distTp)
 })
 ```
 
-Generate a sampling distribution of distances between top quantile cells
-```{r warning=FALSE,message=F,error=FALSE,include=F}
+Generate a sampling distribution of distances between top quartile cells
+```{r warning=FALSE,message=F,error=FALSE}
 randMeanDists <- sapply(1:1e4,function(i){
       dr <- dist(geometry[sample(3039,324),])
       mean(dr)
 })
-hist(randMeanDists,breaks = 100,main="Distribution of distances between random top quantile cells")
+hist(randMeanDists,breaks = 100,main="Distribution of distances between random 1/4 of total cells")
 meanRD <- mean(randMeanDists)
 sdRD <- sd(randMeanDists)
 ```
-With $H_0$ = Mean distance >= meanRD
-and $H_a$ = Mean distance < meanRD
-and $\alpha$ = 0.05
+With $H_0$ = Mean distance >= meanRD, and <br/>
+$H_a$ = Mean distance < meanRD, and <br/>
+$\alpha$ = 0.05
 ```{r}
 pVals <- sapply(meanDistPat,function(md){
       pnorm(md,mean = meanRD,sd=sdRD)
 })
 print(pVals)
-sum(pVals<0.05)
+sum(pVals*10<0.05)
 ```
 8 out of 10 patterns are significant. 
 
